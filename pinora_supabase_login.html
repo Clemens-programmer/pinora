@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="dark">
+  <meta name="theme-color" content="#08150f">
+  <title>Pinora – Anmeldung</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root{--bg:#07110d;--panel:rgba(15,31,24,.88);--panel2:#10251b;--line:rgba(255,255,255,.1);--text:#f4faf6;--muted:#9bb0a3;--green:#73e29f;--green2:#2dbd78;--blue:#79bfff;--danger:#ff8793}
+    *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;min-height:100vh;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--text);background:radial-gradient(circle at 12% 14%,#154b31 0,transparent 30%),radial-gradient(circle at 87% 12%,#173956 0,transparent 28%),linear-gradient(145deg,#040a07,#091810 60%,#07110d)}
+    button,input{font:inherit}.hidden{display:none!important}.shell{min-height:100vh;display:grid;grid-template-columns:minmax(0,1.1fr) minmax(360px,.9fr);gap:44px;align-items:center;max-width:1180px;margin:auto;padding:42px}
+    .intro{padding:25px}.intro-badge{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border:1px solid rgba(115,226,159,.22);border-radius:999px;background:rgba(115,226,159,.08);color:#bdf4d1;font-size:13px}.intro h1{font-size:clamp(48px,7vw,84px);line-height:.96;letter-spacing:-.065em;margin:22px 0}.intro h1 span{color:var(--green)}.intro p{max-width:570px;color:#b0c1b6;font-size:18px;line-height:1.7}.features{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:30px}.feature{padding:16px;border:1px solid var(--line);border-radius:18px;background:rgba(255,255,255,.04)}.feature strong{display:block;margin:8px 0 4px}.feature small{color:var(--muted);line-height:1.45}
+    .card{width:min(440px,100%);justify-self:end;padding:30px;border:1px solid var(--line);border-radius:30px;background:var(--panel);box-shadow:0 34px 90px rgba(0,0,0,.46);backdrop-filter:blur(24px)}.brand{display:flex;align-items:center;gap:13px;margin-bottom:24px}.logo{width:48px;height:48px;border-radius:16px;background:linear-gradient(135deg,var(--green),var(--green2));box-shadow:0 12px 32px rgba(45,189,120,.25);display:grid;place-items:center;color:#062114;font-weight:950;font-size:23px}.brand h2{font-size:20px;margin:0}.brand p{margin:3px 0 0;color:var(--muted);font-size:13px}.card h3{font-size:29px;letter-spacing:-.035em;margin:0 0 8px}.sub{color:var(--muted);line-height:1.55;margin:0 0 24px}
+    .tabs{display:grid;grid-template-columns:1fr 1fr;background:rgba(255,255,255,.05);padding:4px;border-radius:14px;margin-bottom:22px}.tab{border:0;border-radius:11px;padding:10px;background:transparent;color:var(--muted);cursor:pointer}.tab.active{background:rgba(255,255,255,.1);color:white}label{display:block;font-size:13px;color:#c9d8ce;margin:15px 0 7px}.field{position:relative}.field input{width:100%;border:1px solid var(--line);border-radius:14px;background:rgba(3,12,7,.65);color:white;padding:13px 78px 13px 14px;outline:none;transition:.2s}.field input:focus{border-color:var(--green);box-shadow:0 0 0 3px rgba(115,226,159,.12)}.eye{position:absolute;right:8px;top:50%;transform:translateY(-50%);border:0;background:transparent;color:var(--muted);cursor:pointer;padding:8px}
+    .primary{width:100%;margin-top:20px;border:0;border-radius:14px;padding:13px 16px;background:linear-gradient(135deg,var(--green),#66ccff);color:#062114;font-weight:850;cursor:pointer}.primary:disabled{opacity:.55;cursor:wait}.link{border:0;background:transparent;color:#90d8ff;cursor:pointer;padding:0}.row{display:flex;justify-content:flex-end;margin-top:12px;font-size:13px}.message{margin-top:16px;padding:12px 13px;border-radius:12px;font-size:13px;line-height:1.45;border:1px solid var(--line);background:rgba(255,255,255,.05)}.message.error{color:#ffd9dd;border-color:rgba(255,135,147,.35);background:rgba(255,135,147,.09)}.message.success{color:#d8ffe7;border-color:rgba(115,226,159,.35);background:rgba(115,226,159,.09)}
+    .app{min-height:100vh;padding:24px}.topbar{max-width:1180px;margin:auto;display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border:1px solid var(--line);border-radius:20px;background:rgba(9,25,16,.78);backdrop-filter:blur(18px)}.topbar .brand{margin:0}.user{color:var(--muted);font-size:13px}.logout{border:1px solid var(--line);border-radius:12px;padding:9px 13px;background:rgba(255,255,255,.06);color:white;cursor:pointer}.dashboard{max-width:1180px;margin:24px auto}.hero{padding:34px;border:1px solid var(--line);border-radius:26px;background:linear-gradient(135deg,rgba(20,66,42,.78),rgba(12,35,49,.78))}.hero h1{margin:0 0 8px;font-size:34px}.hero p{margin:0;color:#b6c8bd}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:16px}.tile{min-height:150px;padding:21px;border:1px solid var(--line);border-radius:22px;background:rgba(13,31,21,.78)}.tile .icon{font-size:25px}.tile h3{margin:16px 0 7px}.tile p{margin:0;color:var(--muted);line-height:1.5}.notice{margin-top:16px;padding:17px;border:1px solid rgba(115,226,159,.2);border-radius:18px;background:rgba(115,226,159,.07);color:#c9ebd5}.spinner{display:inline-block;width:15px;height:15px;border:2px solid rgba(0,0,0,.25);border-top-color:#062114;border-radius:50%;animation:spin .7s linear infinite;vertical-align:-2px;margin-right:7px}@keyframes spin{to{transform:rotate(360deg)}}
+    @media(max-width:850px){.shell{grid-template-columns:1fr;padding:24px}.intro{padding:10px}.intro h1{font-size:55px}.features{display:none}.card{justify-self:center}.grid{grid-template-columns:1fr}.app{padding:14px}}
+  </style>
+</head>
+<body>
+  <main id="authView" class="shell">
+    <section class="intro">
+      <div class="intro-badge">● Deine Orte. Deine Reisen. Dein Pinora.</div>
+      <h1>Erlebnisse<br><span>festhalten.</span></h1>
+      <p>Speichere besondere Orte, plane kommende Reisen und behalte deine persönlichen Entdeckungen sicher an einem Platz.</p>
+      <div class="features">
+        <div class="feature"><span>📍</span><strong>Orte merken</strong><small>Lieblingsplätze übersichtlich sammeln.</small></div>
+        <div class="feature"><span>🧳</span><strong>Reisen planen</strong><small>Ideen und Ziele für später sichern.</small></div>
+        <div class="feature"><span>🔒</span><strong>Sicher anmelden</strong><small>Dein Konto wird über Supabase geschützt.</small></div>
+      </div>
+    </section>
+    <section class="card" aria-labelledby="authTitle">
+      <div class="brand"><div class="logo">P</div><div><h2>Pinora</h2><p>Dein persönlicher Reisebegleiter</p></div></div>
+      <h3 id="authTitle">Willkommen zurück</h3><p id="authSubtitle" class="sub">Melde dich an, um deine Orte und Reisen zu öffnen.</p>
+      <div class="tabs"><button id="loginTab" class="tab active" type="button">Anmelden</button><button id="signupTab" class="tab" type="button">Registrieren</button></div>
+      <form id="authForm">
+        <label for="email">E-Mail-Adresse</label><div class="field"><input id="email" type="email" autocomplete="email" placeholder="name@beispiel.de" required></div>
+        <label for="password">Passwort</label><div class="field"><input id="password" type="password" autocomplete="current-password" minlength="6" placeholder="Mindestens 6 Zeichen" required><button id="togglePassword" class="eye" type="button">Anzeigen</button></div>
+        <button id="submitButton" class="primary" type="submit">Anmelden</button>
+        <div id="forgotRow" class="row"><button id="forgotButton" class="link" type="button">Passwort vergessen?</button></div>
+        <div id="message" class="message hidden" role="status" aria-live="polite"></div>
+      </form>
+    </section>
+  </main>
+
+  <main id="appView" class="app hidden">
+    <header class="topbar"><div class="brand"><div class="logo">P</div><div><h2>Pinora</h2><div id="userEmail" class="user"></div></div></div><button id="logoutButton" class="logout">Abmelden</button></header>
+    <section class="dashboard">
+      <div class="hero"><h1>Willkommen bei Pinora</h1><p>Deine gespeicherten Orte und Reiseideen warten auf dich.</p></div>
+      <div class="grid"><article class="tile"><div class="icon">📍</div><h3>Gespeicherte Orte</h3><p>Hier kann der bisherige Bereich mit deinen gespeicherten Orten eingesetzt werden.</p></article><article class="tile"><div class="icon">🗺️</div><h3>Meine Reisen</h3><p>Plane Reiseziele, Termine und persönliche Notizen.</p></article><article class="tile"><div class="icon">✨</div><h3>Neue Entdeckung</h3><p>Füge einen neuen Ort oder eine neue Reiseidee hinzu.</p></article></div>
+      <div class="notice"><strong>Login ist aktiv:</strong> Dieser Pinora-Bereich wird erst nach einer erfolgreichen Anmeldung angezeigt.</div>
+    </section>
+  </main>
+<script>
+  const SUPABASE_URL='https://cucycywdjzrlmjnlbdsr.supabase.co';
+  const SUPABASE_PUBLISHABLE_KEY='sb_publishable_exNS52M9dyMhh_hL19dSkg_oR_XE8IK';
+  const supabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);
+  const $=id=>document.getElementById(id); let mode='login';
+  function showMessage(text,type='error'){$('message').textContent=text;$('message').className='message '+type}
+  function clearMessage(){$('message').textContent='';$('message').className='message hidden'}
+  function setLoading(v){$('submitButton').disabled=v;$('submitButton').innerHTML=v?'<span class="spinner"></span>Bitte warten…':(mode==='login'?'Anmelden':'Konto erstellen')}
+  function translateError(message=''){const m=message.toLowerCase();if(m.includes('invalid login credentials'))return'E-Mail-Adresse oder Passwort ist nicht korrekt.';if(m.includes('email not confirmed'))return'Bitte bestätige zuerst deine E-Mail-Adresse.';if(m.includes('user already registered'))return'Für diese E-Mail-Adresse besteht bereits ein Konto.';if(m.includes('password should be'))return'Das Passwort erfüllt die Mindestanforderungen nicht.';if(m.includes('rate limit'))return'Zu viele Versuche. Bitte warte kurz.';return message||'Es ist ein unbekannter Fehler aufgetreten.'}
+  function setMode(next){mode=next;clearMessage();const login=mode==='login';$('loginTab').classList.toggle('active',login);$('signupTab').classList.toggle('active',!login);$('authTitle').textContent=login?'Willkommen zurück':'Pinora-Konto erstellen';$('authSubtitle').textContent=login?'Melde dich an, um deine Orte und Reisen zu öffnen.':'Registriere dich, um Pinora auf mehreren Geräten zu verwenden.';$('submitButton').textContent=login?'Anmelden':'Konto erstellen';$('password').autocomplete=login?'current-password':'new-password';$('forgotRow').classList.toggle('hidden',!login)}
+  function renderSession(session){const signedIn=!!session;$('authView').classList.toggle('hidden',signedIn);$('appView').classList.toggle('hidden',!signedIn);$('userEmail').textContent=signedIn?(session.user.email||'Angemeldet'):''}
+  $('loginTab').onclick=()=>setMode('login');$('signupTab').onclick=()=>setMode('signup');
+  $('togglePassword').onclick=()=>{const i=$('password');i.type=i.type==='password'?'text':'password';$('togglePassword').textContent=i.type==='password'?'Anzeigen':'Verbergen'};
+  $('authForm').onsubmit=async e=>{e.preventDefault();clearMessage();const email=$('email').value.trim(),password=$('password').value;setLoading(true);try{if(mode==='login'){const{error}=await supabaseClient.auth.signInWithPassword({email,password});if(error)throw error}else{const{data,error}=await supabaseClient.auth.signUp({email,password,options:{emailRedirectTo:location.origin+location.pathname}});if(error)throw error;if(!data.session)showMessage('Konto erstellt. Bitte bestätige deine E-Mail über den zugesandten Link.','success');else renderSession(data.session)}}catch(error){showMessage(translateError(error.message))}finally{setLoading(false)}};
+  $('forgotButton').onclick=async()=>{clearMessage();const email=$('email').value.trim();if(!email){showMessage('Trage zuerst deine E-Mail-Adresse ein.');$('email').focus();return}try{const{error}=await supabaseClient.auth.resetPasswordForEmail(email,{redirectTo:location.origin+location.pathname});if(error)throw error;showMessage('Wenn ein Konto existiert, wurde eine E-Mail zum Zurücksetzen versendet.','success')}catch(error){showMessage(translateError(error.message))}};
+  $('logoutButton').onclick=async()=>{const{error}=await supabaseClient.auth.signOut();if(error)alert(translateError(error.message))};
+  supabaseClient.auth.onAuthStateChange(async(event,session)=>{if(event==='PASSWORD_RECOVERY'){const next=prompt('Gib dein neues Passwort ein (mindestens 6 Zeichen):');if(next){const{error}=await supabaseClient.auth.updateUser({password:next});alert(error?translateError(error.message):'Dein Passwort wurde aktualisiert.')}}renderSession(session)});
+  (async()=>{const{data:{session}}=await supabaseClient.auth.getSession();renderSession(session)})();
+</script>
+</body>
+</html>
