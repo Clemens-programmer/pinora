@@ -562,7 +562,7 @@ build();
  function errorText(text=''){let m=text.toLowerCase();if(m.includes('invalid login credentials'))return'E-Mail-Adresse oder Passwort ist nicht korrekt.';if(m.includes('email not confirmed'))return'Bitte bestätige zuerst deine E-Mail-Adresse.';if(m.includes('user already registered'))return'Für diese E-Mail-Adresse besteht bereits ein Konto.';if(m.includes('password should be'))return'Das Passwort erfüllt die Mindestanforderungen nicht.';if(m.includes('rate limit'))return'Zu viele Versuche. Bitte warte kurz.';return text||'Es ist ein unbekannter Fehler aufgetreten.'}
  function loading(on){let b=el('pinoraAuthSubmit');b.disabled=on;b.innerHTML=on?'<span class="pinoraAuthSpinner"></span>Bitte warten…':(authMode==='login'?'Anmelden':'Konto erstellen')}
  function setMode(next){authMode=next;clearMessage();let login=next==='login';el('pinoraLoginTab').classList.toggle('active',login);el('pinoraSignupTab').classList.toggle('active',!login);el('pinoraAuthTitle').textContent=login?'Willkommen zurück':'Pinora-Konto erstellen';el('pinoraAuthSub').textContent=login?'Melde dich an, um Pinora zu öffnen.':'Registriere dich sicher mit deiner E-Mail-Adresse.';el('pinoraAuthSubmit').textContent=login?'Anmelden':'Konto erstellen';el('pinoraPassword').autocomplete=login?'current-password':'new-password';el('pinoraForgotRow').classList.toggle('pinoraAuthHidden',!login)}
- function render(session){let signed=!!session;el('pinoraAuth').classList.toggle('auth-hidden',signed);el('pinoraAccount').classList.toggle('open',signed);el('pinoraAccountEmail').textContent=signed?(session.user.email||'Angemeldet'):'';let se=el('settingsAccountEmail');if(se)se.textContent=signed?(session.user.email||'Angemeldet'):'Nicht angemeldet';if(signed){let splash=el('pinoraSplash');if(splash)splash.classList.add('hide')}}
+ function render(session){let signed=!!session;el('pinoraAuth').classList.toggle('auth-hidden',signed);window.dispatchEvent(new CustomEvent('pinora-auth-ready',{detail:{signedIn:signed}}));el('pinoraAccount').classList.toggle('open',signed);el('pinoraAccountEmail').textContent=signed?(session.user.email||'Angemeldet'):'';let se=el('settingsAccountEmail');if(se)se.textContent=signed?(session.user.email||'Angemeldet'):'Nicht angemeldet';if(signed){let splash=el('pinoraSplash');if(splash)splash.classList.add('hide')}}
  el('pinoraLoginTab').onclick=()=>setMode('login');el('pinoraSignupTab').onclick=()=>setMode('signup');
  el('pinoraPasswordToggle').onclick=()=>{let i=el('pinoraPassword');i.type=i.type==='password'?'text':'password';el('pinoraPasswordToggle').textContent=i.type==='password'?'Anzeigen':'Verbergen'};
  el('pinoraAuthForm').onsubmit=async e=>{e.preventDefault();clearMessage();let email=el('pinoraEmail').value.trim(),password=el('pinoraPassword').value;loading(true);try{if(authMode==='login'){let{error}=await authClient.auth.signInWithPassword({email,password});if(error)throw error}else{let{data,error}=await authClient.auth.signUp({email,password,options:{emailRedirectTo:location.origin+location.pathname}});if(error)throw error;if(!data.session)message('Konto erstellt. Bitte bestätige deine E-Mail über den zugesandten Link.','success');else render(data.session)}}catch(err){message(errorText(err.message))}finally{loading(false)}};
@@ -877,22 +877,38 @@ build();
  const project='https://cucycywdjzrlmjnlbdsr.supabase.co';
  const publishable='sb_publishable_exNS52M9dyMhh_hL19dSkg_oR_XE8IK';
  function safeHttpUrl(value){try{const u=new URL(String(value));return ['https:','http:'].includes(u.protocol)?u.href:''}catch{return''}}
+ let bannerRequest=0;
+ function signedInView(){return document.getElementById('pinoraAuth')?.classList.contains('auth-hidden')&&!document.documentElement.classList.contains('pinoraMaintenanceActive')}
  async function loadBanner(){
+   const request=++bannerRequest;
+   if(!signedInView()){banner.hidden=true;return}
    try{
      const r=await fetch(project+'/rest/v1/pinora_banner?select=id,title,body,image_url,target_url,button_text,label,updated_at&active=eq.true&order=updated_at.desc&limit=1',{headers:{apikey:publishable,Authorization:'Bearer '+publishable},cache:'no-store'});
-     if(!r.ok)return;const rows=await r.json(),ad=rows?.[0];if(!ad)return;
-     const target=safeHttpUrl(ad.target_url),image=safeHttpUrl(ad.image_url);if(!target)return;
-     const dismissed=localStorage.getItem('pinoraAdDismissed');if(dismissed===String(ad.id)+':'+String(ad.updated_at))return;
+     if(request!==bannerRequest)return;
+     if(!r.ok)throw Error('HTTP '+r.status);
+     const rows=await r.json(),ad=rows?.[0];
+     if(!ad){banner.hidden=true;return}
+     const target=safeHttpUrl(ad.target_url),image=safeHttpUrl(ad.image_url);
+     if(!target){banner.hidden=true;return}
+     const dismissKey=String(ad.id)+':'+String(ad.updated_at);
+     if(localStorage.getItem('pinoraAdDismissed')===dismissKey){banner.hidden=true;return}
      document.getElementById('pinoraAdTitle').textContent=String(ad.title||'Empfehlung').slice(0,100);
      document.getElementById('pinoraAdText').textContent=String(ad.body||'').slice(0,240);
      document.getElementById('pinoraAdLabel').textContent=String(ad.label||'Empfehlung').slice(0,30);
      document.getElementById('pinoraAdCta').textContent=String(ad.button_text||'Mehr erfahren').slice(0,40);
-     const img=document.getElementById('pinoraAdImage');if(image){img.src=image;img.hidden=false}else img.hidden=true;
-     adLink.href=target;banner.dataset.dismissKey=String(ad.id)+':'+String(ad.updated_at);banner.hidden=false;
-   }catch(error){console.warn('Werbebalken konnte nicht geladen werden.');}
+     const img=document.getElementById('pinoraAdImage');
+     if(image){img.src=image;img.alt=String(ad.title||'Werbebild').slice(0,100);img.hidden=false}else{img.removeAttribute('src');img.alt='';img.hidden=true}
+     adLink.href=target;banner.dataset.dismissKey=dismissKey;
+     if(signedInView())banner.hidden=false;
+   }catch(error){banner.hidden=true;console.warn('Werbebalken konnte nicht geladen werden:',error.message)}
  }
  document.getElementById('pinoraAdClose')?.addEventListener('click',()=>{if(banner.dataset.dismissKey)localStorage.setItem('pinoraAdDismissed',banner.dataset.dismissKey);banner.hidden=true});
- loadBanner();
+ const authLayer=document.getElementById('pinoraAuth');
+ if(authLayer)new MutationObserver(()=>{if(signedInView())setTimeout(loadBanner,120);else banner.hidden=true}).observe(authLayer,{attributes:true,attributeFilter:['class']});
+ window.addEventListener('pinora-auth-ready',loadBanner);
+ window.addEventListener('online',()=>{if(signedInView())loadBanner()});
+ window.addEventListener('pageshow',()=>{if(signedInView())loadBanner()});
+ if(signedInView())loadBanner();
 })();
 </script>
 
