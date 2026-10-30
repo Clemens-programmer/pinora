@@ -1420,37 +1420,7 @@ build();
 .psE2ee[data-state="ready"]{background:#ecfdf5!important;color:#076b49!important}
 .psE2ee[data-state="missing"]{background:#fff7ed!important;color:#9a3412!important}
 </style>
-<script id="pinora-chat-security-upgrade-script">
-(()=>{
-'use strict';
-const $=id=>document.getElementById(id);
-let active='';
-const name=()=>active?'pinora:e2ee:'+active:'';
-const strong=()=>{const b=new Uint8Array(24);crypto.getRandomValues(b);return Array.from(b,x=>x.toString(16).padStart(2,'0')).join('').match(/.{1,4}/g).join('-')};
-const update=()=>{const c=$('psE2eeControl'),v=name()&&sessionStorage.getItem(name());if(!c)return;c.dataset.state=active?(v?'ready':'missing'):'';const x=c.querySelector('span');if(x)x.textContent=active?(v?'🔒 Geschützt':'⚠ Schlüssel fehlt'):'🔒 Ende-zu-Ende'};
-function manage(){
- if(!active){alert('Bitte zuerst einen Chat auswählen.');return}
- const old=sessionStorage.getItem(name())||'',suggestion=old||strong();
- const message=['Gemeinsamer Chat-Schlüssel (mindestens 16 Zeichen).','','Sicherer Vorschlag:',suggestion,'','Den Schlüssel persönlich oder über einen anderen vertrauenswürdigen Kanal teilen. Er wird nur bis zum Schließen dieses Browser-Tabs gespeichert.'].join('\n');
- const v=prompt(message,suggestion);
- if(v===null)return;
- if(v.trim().length<16){alert('Der Schlüssel muss mindestens 16 Zeichen lang sein.');return}
- sessionStorage.setItem(name(),v.trim());
- document.querySelectorAll('.psBubble').forEach(x=>delete x.dataset.e2eeDone);
- update();
- setTimeout(()=>document.querySelector('#psFriends [data-friend="'+CSS.escape(active)+'"]')?.click(),80)
-}
-document.addEventListener('click',e=>{const f=e.target.closest?.('[data-friend]');if(f?.dataset.friend){active=f.dataset.friend;setTimeout(update,40)}},true);
-window.addEventListener('DOMContentLoaded',()=>{
- const old=$('psE2eeKey');
- if(old){old.id='psSecurityKey';old.textContent='Schlüssel verwalten';old.title='Gemeinsamen Schlüssel sicher einrichten';old.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();manage()})}
- const m=$('psMessage');
- if(m){m.maxLength=2000;m.autocomplete='off';m.spellcheck=false;const n=document.createElement('div');n.className='psSecurityNote';n.textContent='Nachrichteninhalt verschlüsselt · maximal 2.000 Zeichen · keine Passwörter oder Zugangsdaten senden';m.closest('form')?.after(n)}
- const h=$('psChatHint');if(h)h.title='Nachrichteninhalte sind verschlüsselt. Metadaten wie Zeitpunkt und beteiligte Konten können technisch sichtbar bleiben.';
- update()
-})
-})();
-</script>
+<script id="pinora-chat-security-upgrade-script">/* Durch automatischen Schluesseltausch ersetzt. */</script>
 <style id="pinora-profile-account-upgrade-style">
 #pinoraSocialModal .psSide > .psCard:first-of-type{display:none!important}
 .pinoraProfileGroup{margin-bottom:22px}.pinoraProfileFields{display:grid;gap:0}.pinoraEmojiPicker{display:grid;grid-template-columns:repeat(8,minmax(38px,1fr));gap:7px;padding:14px}.pinoraEmojiChoice{min-width:0!important;min-height:44px!important;padding:6px!important;justify-content:center!important;font-size:23px!important;background:#0b141a!important}.pinoraEmojiChoice.selected{background:#2b77f3!important;border-color:#66a3ff!important;box-shadow:0 0 0 3px rgba(43,119,243,.2)!important}.pinoraProfileMessage{padding:12px 18px;border-top:1px solid rgba(255,255,255,.07);color:var(--muted);font-size:12px}.pinoraProfileMessage.ok{color:#86efac}.pinoraProfileMessage.error{color:#ff9d8c}.pinoraProfileSave{width:100%;justify-content:center}.pinoraUsernameRequired{width:min(440px,100%)}.pinoraUsernameRequiredIcon{width:58px;height:58px;display:grid;place-items:center;margin-bottom:14px;border-radius:18px;background:rgba(37,99,235,.16);font-size:29px}.psAvatar{font-size:20px}.psAvatarText{font-size:16px}
@@ -1570,9 +1540,14 @@ async function finishNew(sid){const {data}=await db.from('pinora_device_links').
 async function listDevices(){const {data,error}=await db.from('pinora_devices').select('*').is('revoked_at',null).order('created_at');if(error)throw error;open('Verknüpfte Geräte',`<div>${(data||[]).map(d=>`<div class="pdl-row"><div><b>${esc(d.device_name)}</b>${d.device_id===device?.id?' · Aktuelles Gerät':''}<small>Zuletzt aktiv: ${new Date(d.last_active_at||d.created_at).toLocaleString('de-DE')}</small></div>${d.device_id===device?.id?'':`<button class="pdl-btn danger" data-revoke="${esc(d.device_id)}">Entfernen</button>`}</div>`).join('')}</div><div class="pdl-actions"><button class="pdl-btn secondary" id="pdlApproveNew">Neues Gerät verknüpfen</button></div>`);$('pdlApproveNew').onclick=approvePrompt;body.querySelectorAll('[data-revoke]').forEach(b=>b.onclick=()=>revoke(b.dataset.revoke))}
 async function revoke(id){if(!confirm('Gerät wirklich entfernen? Es erhält danach keine neuen Schlüssel mehr.'))return;const {error}=await db.from('pinora_devices').update({revoked_at:now()}).eq('device_id',id);if(error)return alert(error.message);await listDevices()}
 function buildUI(){const page=document.querySelector('[data-settings-page="account"]');if(!page||$('pdlGroup'))return;const g=document.createElement('div');g.id='pdlGroup';g.className='pdl-group';g.innerHTML=`<h3 class="iosSettingsGroupTitle">Sicherheit</h3><div class="iosSettingsGroup pdl-card"><div class="pdl-row"><div><b>Verknüpfte Geräte</b><small>Geräte verwalten und neue Geräte per QR-Code koppeln.</small></div><button class="pdl-btn secondary" id="pdlManage">Öffnen</button></div></div>`;page.appendChild(g);$('pdlManage').onclick=listDevices}
-async function encMsg(text,fid){if(!ring)throw Error('Dieses Gerät ist nicht verknüpft.');const v=ring.current,raw=U(ring.keys[v]),key=await crypto.subtle.importKey('raw',raw,{name:'AES-GCM'},false,['encrypt']);const iv=crypto.getRandomValues(new Uint8Array(12));const ct=await crypto.subtle.encrypt({name:'AES-GCM',iv,additionalData:te.encode('pinora-chat|'+fid+'|'+v)},key,te.encode(text));return `E2M1:${v}.${B(iv)}.${B(ct)}`}
-async function decMsg(text,fid){if(!text.startsWith('E2M1:'))return text;try{const [vs,iv,ct]=text.slice(5).split('.'),raw=ring?.keys?.[vs];if(!raw)return '🔒 Nachrichtenschlüssel auf diesem Gerät nicht vorhanden.';const key=await crypto.subtle.importKey('raw',U(raw),{name:'AES-GCM'},false,['decrypt']);return td.decode(await crypto.subtle.decrypt({name:'AES-GCM',iv:U(iv),additionalData:te.encode('pinora-chat|'+fid+'|'+vs)},key,U(ct)))}catch{return '🔒 Nachricht konnte nicht entschlüsselt werden.'}}
-async function decode(){for(const n of document.querySelectorAll('.psBubble')){if(n.dataset.pdl===friendship)continue;const w=document.createTreeWalker(n,NodeFilter.SHOW_TEXT);let x;while(x=w.nextNode()){const t=x.nodeValue.trim();if(t.startsWith('E2M1:'))x.nodeValue=x.nodeValue.replace(t,await decMsg(t,friendship))}n.dataset.pdl=friendship}}
+
+async function friendTransport(priv,pubJwk,salt,fid,deviceId){const pub=await importPub(pubJwk);const bits=await crypto.subtle.deriveBits({name:'ECDH',public:pub},priv,256);const base=await crypto.subtle.importKey('raw',bits,'HKDF',false,['deriveKey']);return crypto.subtle.deriveKey({name:'HKDF',hash:'SHA-256',salt:U(salt),info:te.encode('pinora-friend-key-v1|'+fid+'|'+deviceId)},base,{name:'AES-GCM',length:256},false,['encrypt','decrypt'])}
+async function loadFriendEnvelope(fid){if(!device)return null;const {data,error}=await db.from('pinora_friend_key_envelopes').select('*').eq('friendship_id',fid).eq('recipient_device_id',device.id).maybeSingle();if(error)throw error;if(!data)return null;const k=await friendTransport(device.pair.privateKey,data.ephemeral_public_key,data.hkdf_salt,fid,device.id);const raw=await crypto.subtle.decrypt({name:'AES-GCM',iv:U(data.iv),additionalData:te.encode(fid+'|'+device.id)},k,U(data.ciphertext));ring.friendKeys=ring.friendKeys||{};ring.friendKeys[fid]=B(raw);await saveLocal();return new Uint8Array(raw)}
+async function createFriendEnvelopes(fid){const {data:devices,error}=await db.rpc('pinora_friend_key_devices',{p_friendship:fid});if(error)throw error;if(!devices?.length)throw Error('Für den automatischen Schlüsseltausch wurde kein verknüpftes Gerät gefunden.');const raw=crypto.getRandomValues(new Uint8Array(32)),rows=[];for(const d of devices){const eph=await crypto.subtle.generateKey({name:'ECDH',namedCurve:'P-256'},true,['deriveBits']);const pub=await crypto.subtle.exportKey('jwk',eph.publicKey);const salt=crypto.getRandomValues(new Uint8Array(32));const k=await friendTransport(eph.privateKey,d.public_key,salt,fid,d.device_id);const iv=crypto.getRandomValues(new Uint8Array(12));const ct=await crypto.subtle.encrypt({name:'AES-GCM',iv,additionalData:te.encode(fid+'|'+d.device_id)},k,raw);rows.push({friendship_id:fid,recipient_user_id:d.user_id,recipient_device_id:d.device_id,ephemeral_public_key:pub,hkdf_salt:B(salt),iv:B(iv),ciphertext:B(ct),key_version:1})}const {error:upError}=await db.from('pinora_friend_key_envelopes').upsert(rows,{onConflict:'friendship_id,recipient_device_id',ignoreDuplicates:true});if(upError)throw upError;ring.friendKeys=ring.friendKeys||{};ring.friendKeys[fid]=B(raw);await saveLocal();return raw}
+async function ensureFriendKey(fid){if(!ring||!device)throw Error('Dieses Gerät muss zuerst sicher verknüpft werden.');ring.friendKeys=ring.friendKeys||{};if(ring.friendKeys[fid])return U(ring.friendKeys[fid]);const loaded=await loadFriendEnvelope(fid);if(loaded)return loaded;await createFriendEnvelopes(fid);return (await loadFriendEnvelope(fid))||U(ring.friendKeys[fid])}
+async function encMsg(text,fid){const raw=await ensureFriendKey(fid),key=await crypto.subtle.importKey('raw',raw,{name:'AES-GCM'},false,['encrypt']);const iv=crypto.getRandomValues(new Uint8Array(12));const ct=await crypto.subtle.encrypt({name:'AES-GCM',iv,additionalData:te.encode('pinora-chat-v2|'+fid+'|1')},key,te.encode(text));return `E2M2:1.${B(iv)}.${B(ct)}`}
+async function decMsg(body,fid){try{if(!body.startsWith('E2M2:'))return body;const [v,iv,ct]=body.slice(5).split('.'),raw=await ensureFriendKey(fid),key=await crypto.subtle.importKey('raw',raw,{name:'AES-GCM'},false,['decrypt']);return td.decode(await crypto.subtle.decrypt({name:'AES-GCM',iv:U(iv),additionalData:te.encode('pinora-chat-v2|'+fid+'|'+v)},key,U(ct)))}catch(e){console.warn('E2EE:',e);return '🔒 Nachricht konnte auf diesem Gerät noch nicht entschlüsselt werden.'}}
+async function decode(){for(const n of document.querySelectorAll('.psBubble')){if(n.dataset.pdl===friendship)continue;const w=document.createTreeWalker(n,NodeFilter.SHOW_TEXT);let x;while(x=w.nextNode()){const t=x.nodeValue.trim();if(t.startsWith('E2M2:'))x.nodeValue=x.nodeValue.replace(t,await decMsg(t,friendship))}n.dataset.pdl=friendship}}
 document.addEventListener('click',e=>{const f=e.target.closest?.('[data-friend]');if(f){friendship=f.dataset.friend||'';setTimeout(decode,80)}},true);
 document.addEventListener('submit',async e=>{if(e.target?.id!=='psComposer'||!friendship)return;e.preventDefault();e.stopImmediatePropagation();const i=$('psMessage'),text=i?.value.trim();if(!text)return;try{const b=await encMsg(text,friendship),{error}=await db.rpc('pinora_send_message',{p_friendship:friendship,p_body:b});if(error)throw error;i.value='';setTimeout(()=>$('psFriends')?.querySelector('[data-friend="'+CSS.escape(friendship)+'"]')?.click(),120)}catch(x){$('psChatHint').textContent=x.message}},true);
 new MutationObserver(decode).observe($('psMessages'),{childList:true,subtree:true});
@@ -1581,4 +1556,36 @@ document.addEventListener('DOMContentLoaded',()=>setTimeout(init,800));
 })();
 </script>
 
+
+<script id="pinora-friends-button-repair">
+(function(){
+  'use strict';
+  function closeMobileMenu(){
+    const bg=document.getElementById('mobileMoreBg');
+    const toggle=document.getElementById('mobileMenuToggle');
+    if(bg){bg.classList.remove('open');bg.setAttribute('aria-hidden','true')}
+    if(toggle){toggle.classList.remove('open');toggle.setAttribute('aria-expanded','false')}
+  }
+  function openFriends(event){
+    event.preventDefault();
+    event.stopPropagation();
+    closeMobileMenu();
+    const launcher=document.getElementById('pinoraSocialFab');
+    if(launcher){launcher.click();return}
+    const modal=document.getElementById('pinoraSocialModal');
+    if(modal){modal.classList.add('open');modal.setAttribute('aria-hidden','false')}
+  }
+  function bind(){
+    ['friendsTopBtn','mobileFriends'].forEach(function(id){
+      const button=document.getElementById(id);
+      if(button&&!button.dataset.friendsRepairBound){
+        button.dataset.friendsRepairBound='true';
+        button.addEventListener('click',openFriends);
+      }
+    });
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',bind,{once:true});
+  else bind();
+})();
+</script>
 </body></html>
