@@ -684,6 +684,12 @@ body.light .statusPill.wishlist{color:#3b2b00}
 .pinoraUsernameRequiredCard input{width:100%;box-sizing:border-box;margin:8px 0 14px;padding:12px;border-radius:12px;border:1px solid #46606d;background:#09131a;color:#fff;font:inherit}
 .pinoraRequiredError{min-height:22px;color:#fca5a5;margin:10px 0}.pinoraUsernameRequiredCard .primary{width:100%;padding:12px;border:0;border-radius:12px;background:#2563eb;color:white;font-weight:800;cursor:pointer}
 </style>
+<style id="pinora-unread-notification-style">
+#friendsTopBtn,#mobileFriends{position:relative}
+.pinoraUnreadBadge{position:absolute;right:-7px;top:-7px;display:grid;place-items:center;min-width:20px;height:20px;padding:0 5px;border-radius:999px;background:#ff453a;color:#fff;font-size:11px;font-weight:900;line-height:1;box-shadow:0 0 0 3px #0b1b24;z-index:4}
+.pinoraUnreadBadge[hidden]{display:none!important}.psPerson .pinoraChatUnread{margin-left:auto;min-width:21px;height:21px;padding:0 6px;border-radius:999px;background:#ff453a;color:white;display:grid;place-items:center;font-size:11px;font-weight:900}
+.pinoraNotifyRow{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:12px;padding:12px;border:1px solid var(--line);border-radius:13px;background:var(--panel2)}.pinoraNotifyRow small{display:block;color:var(--muted);margin-top:3px}.pinoraNotifyRow button{white-space:nowrap}
+</style>
 </head><body>
 <div aria-labelledby="pinoraAuthTitle" id="pinoraAuth">
 <section class="pinoraAuthCard">
@@ -1548,6 +1554,27 @@ body.light .pdl-btn.secondary{color:#102632;background:#edf3f5;border-color:#c7d
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',bind,{once:true});
   else bind();
+})();
+</script>
+<script id="pinora-unread-notification-script">
+(()=>{'use strict';
+const URL='https://cucycywdjzrlmjnlbdsr.supabase.co',KEY='sb_publishable_exNS52M9dyMhh_hL19dSkg_oR_XE8IK';
+const db=window.supabase.createClient(URL,KEY,{auth:{persistSession:true,autoRefreshToken:true}});
+const $=id=>document.getElementById(id);let timer=null,running=false,user=null,previousLatest=localStorage.getItem('pinoraLastIncomingMessage')||'',firstPoll=true;
+function badge(button,id){if(!button)return null;let b=$(id);if(!b){b=document.createElement('b');b.id=id;b.className='pinoraUnreadBadge';b.hidden=true;button.appendChild(b)}return b}
+function setBadge(total){[['friendsTopBtn','pinoraUnreadDesktop'],['mobileFriends','pinoraUnreadMobile']].forEach(([id,bid])=>{const b=badge($(id),bid);if(!b)return;b.textContent=total>99?'99+':String(total);b.hidden=!total});document.title=document.title.replace(/^\(\d+\+?\)\s*/,'');if(total)document.title=`(${total>99?'99+':total}) ${document.title}`}
+function decorate(rows){const map=new Map(rows.map(r=>[r.friendship_id,Number(r.unread_count)||0]));document.querySelectorAll('#psFriends [data-friend]').forEach(row=>{row.querySelector('.pinoraChatUnread')?.remove();const n=map.get(row.dataset.friend)||0;if(n){const b=document.createElement('b');b.className='pinoraChatUnread';b.textContent=n>99?'99+':n;row.appendChild(b)}})}
+function systemNotify(title,body,tag){if(!('Notification'in window)||Notification.permission!=='granted'||document.visibilityState==='visible')return;try{const n=new Notification(title,{body,tag,renotify:true,icon:document.querySelector('.brandLogo')?.src});n.onclick=()=>{window.focus();$('friendsTopBtn')?.click();n.close()}}catch{}}
+function notifyNoticeIncrease(){document.querySelectorAll('.pinoraNoticeCount').forEach(el=>{if(el.dataset.notifyObserved)return;el.dataset.notifyObserved='1';let old=Number(el.textContent)||0;new MutationObserver(()=>{const now=Number(el.textContent)||0;if(now>old)systemNotify('Neue Pinora-Mitteilung','Öffne Pinora, um die Mitteilung anzusehen.','pinora-notice');old=now}).observe(el,{childList:true,characterData:true,subtree:true,attributes:true})})}
+async function poll(){if(running||!user)return;running=true;try{const {data,error}=await db.rpc('pinora_unread_summary');if(error)throw error;const rows=data||[],total=rows.reduce((a,r)=>a+(Number(r.unread_count)||0),0);setBadge(total);decorate(rows);const latest=rows.filter(r=>Number(r.unread_count)>0&&r.last_message_id).sort((a,b)=>new Date(b.last_message_at)-new Date(a.last_message_at))[0];if(latest&&latest.last_message_id!==previousLatest){if(!firstPoll)systemNotify(`Neue Nachricht von @${latest.username}`,latest.last_message_body||'Neue Nachricht','pinora-chat-'+latest.friendship_id);previousLatest=latest.last_message_id;localStorage.setItem('pinoraLastIncomingMessage',previousLatest)}firstPoll=false}catch(e){console.warn('Pinora Nachrichtenprüfung:',e.message)}finally{running=false;schedule()}}
+function interval(){const open=$('pinoraSocialModal')?.classList.contains('open');if(open&&document.visibilityState==='visible')return 8000;if(document.visibilityState==='visible')return 25000;return 60000}
+function schedule(){clearTimeout(timer);timer=setTimeout(poll,interval())}
+async function markRead(id){if(!id||!user)return;const {error}=await db.rpc('pinora_mark_chat_read',{p_friendship:id});if(!error)setTimeout(poll,250)}
+function addPermissionControl(){const host=$('pinoraProfileGroup')||document.querySelector('[data-settings-page="account"]');if(!host||$('pinoraNotifyPermission'))return;const row=document.createElement('div');row.className='pinoraNotifyRow';row.innerHTML=`<span><b>Geräte-Mitteilungen</b><small id="pinoraNotifyState">Nur bei neuen Nachrichten oder Pinora-Mitteilungen, solange Pinora geöffnet ist.</small></span><button type="button" id="pinoraNotifyPermission">Erlauben</button>`;host.appendChild(row);const btn=$('pinoraNotifyPermission'),state=$('pinoraNotifyState');function render(){if(!('Notification'in window)){btn.disabled=true;btn.textContent='Nicht unterstützt';state.textContent='Dieser Browser unterstützt keine Web-Mitteilungen.';return}btn.textContent=Notification.permission==='granted'?'Erlaubt':Notification.permission==='denied'?'Blockiert':'Erlauben';btn.disabled=Notification.permission==='denied';if(Notification.permission==='granted')state.textContent='Mitteilungen sind aktiviert. Die Prüfung erfolgt strom- und datensparend.'}render();btn.onclick=async()=>{if(Notification.permission==='default')await Notification.requestPermission();render()}}
+document.addEventListener('click',e=>{const friend=e.target.closest?.('#psFriends [data-friend]');if(friend)setTimeout(()=>markRead(friend.dataset.friend),600);if(e.target.closest?.('#friendsTopBtn,#mobileFriends,#pinoraSocialFab'))setTimeout(poll,500);if(e.target.closest?.('[data-settings-tab="account"],#settingsBtn,#mobileSettings'))setTimeout(addPermissionControl,160)},true);
+document.addEventListener('visibilitychange',()=>{clearTimeout(timer);setTimeout(poll,300)});window.addEventListener('online',()=>setTimeout(poll,500));
+new MutationObserver(()=>{notifyNoticeIncrease();addPermissionControl();if($('pinoraSocialModal')?.classList.contains('open'))schedule()}).observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['class']});
+db.auth.onAuthStateChange((_e,s)=>{user=s?.user||null;clearTimeout(timer);if(user)setTimeout(poll,700);else setBadge(0)});db.auth.getSession().then(({data})=>{user=data.session?.user||null;notifyNoticeIncrease();addPermissionControl();if(user)poll()});
 })();
 </script>
 </body></html>
